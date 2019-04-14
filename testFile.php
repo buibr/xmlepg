@@ -1,7 +1,7 @@
 <?php
 require 'vendor/autoload.php';
 
-$Parser = new \buibr\xmlepg\Parser();
+$Parser = new \buibr\xmlepg\EpgParser();
 // $Parser->setFile( $argv[1] );
 $Parser->setFile( $argv[1] );
 $Parser->setTargetTimeZone('Europe/Berlin');
