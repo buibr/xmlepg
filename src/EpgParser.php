@@ -296,9 +296,18 @@ class EpgParser {
 		while ($xml->name === 'channel') {
 			$element = new SimpleXMLElement($xml->readOuterXML());
 
-			/** @noinspection PhpUndefinedFieldInspection */
-			$this->channels[(string)$element->attributes()->id] = (string)$element->{'display-name'};
+			/** @noinspection	PhpUndefinedFieldInspection */
+			$group_by	= $this->channels_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
 
+			/** @noinspection PhpUndefinedFieldInspection */
+			$this->channels[$group_by?:0] = [
+				'id'=>(string)$element->attributes()->id,
+				'name'=>(string)$element->{'display-name'},
+				'display-name'=>(string)$element->{'display-name'},
+				'icon'=>(string)$element->{'icon'},
+				'logo'=>(string)$element->{'icon'},
+			];
+			
 			$xml->next('channel');
 			unset($element);
 		}
