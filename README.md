@@ -29,6 +29,7 @@ require 'vendor/autoload.php';
 $epg = new \buibr\xmlepg\EpgParser();
 $epg->setUrl($url);
 $epg->setTargetTimeZone('Europe/Berlin');
+$epg->setProgrammGroup('@id'); // group programms by index.
 
 try {
 	$epg->parseUrl();

@@ -68,6 +68,23 @@ class EpgParser {
 	}
 
 	/**
+	 * Set group by for channels must be channels atribute.
+	 * @param $group - channel will be grouped with. must be @id or pgram attribute. 
+	 */
+	public function setChannelGroup($group){
+		$this->channels_groupby = $group;
+	}
+
+	/**
+	 * Set group by for channels must be channels atribute.
+	 * 	@id = array index starting from 0
+	 * @param $group - programes will be grouped with. must be @id or pgram attribute.
+	 */
+	public function setProgrammGroup($group){
+		$this->epgdata_groupby = $group;
+	}
+
+	/**
 	 * 
 	 */
 	public function parseDate( string $date ){
@@ -155,25 +172,6 @@ class EpgParser {
 	private function channelMatchFilter(string $channel): bool {
 		return array_key_exists($channel, $this->channelfilter);
 	}
-
-	/**
-	 * Set group by for channels must be channels atribute.
-	 * @param $group - channel will be grouped with. must be @id or pgram attribute. 
-	 */
-	public function setChannelGroup($group){
-		$this->channels_groupby = $group;
-	}
-
-	/**
-	 * Set group by for channels must be channels atribute.
-	 * 	@id = array index starting from 0
-	 * @param $group - programes will be grouped with. must be @id or pgram attribute.
-	 */
-	public function setProgrammGroup($group){
-		$this->epgdata_groupby = $group;
-	}
-
-	
 
 	/**
 	 * @throws \RuntimeException

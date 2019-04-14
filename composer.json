@@ -1,6 +1,6 @@
 {
     "name": "buibr/xmlepg",
-    "description": "Parse XMLTV",
+    "description": "Parse XMLTV EPG from file or url",
     "type": "library",
     "license": "MIT",
     "require": {
