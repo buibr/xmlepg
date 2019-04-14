@@ -9,18 +9,171 @@ use XMLReader;
 
 class EpgParser {
 
+	//	Source datas.
 	private $file;
 	private $url;
-	private $content;
+
+	//	channel settings
 	private $channels;
+	private $channels_groupby = 'id';
+
+	//	programmes settings.
 	private $epgdata;
+	private $epgdata_groupby = '@id';
+
+	//	filter
 	private $channelfilter = [];
 	private $ignoreDescr = [];
+
+	//	zone.
 	private $targetTimeZone;
 
 	public function __construct() {
 		$this->targetTimeZone = \date_default_timezone_get();
 	}
+
+	/**
+	 * @param mixed $file`
+	 */
+	public function setFile($file): void {
+		$this->file = $file;
+	}
+
+	/**
+	 * @param mixed $url - url 
+	 */
+	public function setUrl($url): void {
+		$this->url = $url;
+	}
+
+	/**
+	 * @param mixed $channelfilter
+	 */
+	public function setChannelfilter($channelfilter): void {
+		$this->channelfilter[$channelfilter] = 1;
+	}
+
+	/**
+	 * @param string $descr
+	 */
+	public function setIgnoreDescr(string $descr): void {
+		$this->ignoreDescr[$descr]=1;
+	}
+
+	/**
+	 * @param mixed $targetTimeZone
+	 */
+	public function setTargetTimeZone($targetTimeZone): void {
+		$this->targetTimeZone = $targetTimeZone;
+	}
+
+	/**
+	 * 
+	 */
+	public function parseDate( string $date ){
+
+		try
+		{
+			$dt		= \DateTime::createFromFormat('YmdHis P', $date,new DateTimeZone('UTC'));
+			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
+			return	$dt->format('Y-m-d H:i:s');
+		}
+		catch( \Exception $e ){}
+		catch( \Error $e ){}
+
+		try
+		{
+			$dt		= \DateTime::createFromFormat('YmdHis', $date, new DateTimeZone('UTC'));
+			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
+			return	$dt->format('Y-m-d H:i:s');
+		}
+		catch( \Exception $e ){}
+		catch( \Error $e ){}
+
+
+		try
+		{
+			$ex = explode(' ', $date);
+			$sd = $ex[0];
+			$ed = $ex[1];
+			
+			if(strlen($sd) == 13) {
+				$sd = "{$sd}0";
+			}
+			
+			$date = $sd." ".$ed;
+
+			$dt		= \DateTime::createFromFormat('YmdHis P', $date,new DateTimeZone('UTC'));
+			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
+			return	$dt->format('Y-m-d H:i:s');
+		}
+		catch( \Exception $e ){}
+		catch( \Error $e ){}
+
+		
+		return null;
+	}
+
+	/**
+	 * @param $descr
+	 *
+	 * @return string
+	 */
+	private function filterDescr($descr): string {
+		if (array_key_exists($descr,$this->ignoreDescr)) {
+			return '';
+		}
+		return $descr;
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function getChannels() {
+		return $this->channels;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getEpgdata() {
+		return $this->epgdata;
+	}
+
+	
+
+	/**
+	 * 
+	 */
+	public function resetChannelfilter(): void {
+		$this->channelfilter = [];
+	}
+
+	/**
+	 * 
+	 */
+	private function channelMatchFilter(string $channel): bool {
+		return array_key_exists($channel, $this->channelfilter);
+	}
+
+	/**
+	 * Set group by for channels must be channels atribute.
+	 * @param $group - channel will be grouped with. must be @id or pgram attribute. 
+	 */
+	public function setChannelGroup($group){
+		$this->channels_groupby = $group;
+	}
+
+	/**
+	 * Set group by for channels must be channels atribute.
+	 * 	@id = array index starting from 0
+	 * @param $group - programes will be grouped with. must be @id or pgram attribute.
+	 */
+	public function setProgrammGroup($group){
+		$this->epgdata_groupby = $group;
+	}
+
+	
 
 	/**
 	 * @throws \RuntimeException
@@ -80,8 +233,11 @@ class EpgParser {
 				/** @noinspection	PhpUndefinedFieldInspection */
 				$stopString			= $this->parseDate( (string)$element->attributes()->stop );
 
+				/** @noinspection	PhpUndefinedFieldInspection */
+				$grouper			= $this->epgdata_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
+
 				/** @noinspection PhpUndefinedFieldInspection */
-				$this->epgdata[(string)$element->attributes()->channel . ' ' . $startString] = [
+				$this->epgdata[$grouper?:0] = [
 					'start'       => $startString,
 					'start_raw'   => (string)$element->attributes()->start,
 					'channel'     => (string)$element->attributes()->channel,
@@ -160,10 +316,12 @@ class EpgParser {
 				
 				/** @noinspection	PhpUndefinedFieldInspection */
 				$stopString			= $this->parseDate( (string)$element->attributes()->stop );
-
+				
+				/** @noinspection	PhpUndefinedFieldInspection */
+				$grouper			= $this->epgdata_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
 
 				/** @noinspection PhpUndefinedFieldInspection */
-				$this->epgdata[(string)$element->attributes()->channel . ' ' . $startString] = [
+				$this->epgdata[$grouper?:0] = [
 					'start'       => $startString,
 					'start_raw'   => (string)$element->attributes()->start,
 					'channel'     => (string)$element->attributes()->channel,
@@ -185,128 +343,4 @@ class EpgParser {
 		$xml->close();
 
 	}
-
-	/**
-	 * @param mixed $file`
-	 */
-	public function setFile($file): void {
-		$this->file = $file;
-	}
-
-	/**
-	 * @param mixed $url - url 
-	 */
-	public function setUrl($url): void {
-		$this->url = $url;
-	}
-
-	/**
-	 * 
-	 */
-	public function parseDate( string $date ){
-
-		try
-		{
-			$dt		= \DateTime::createFromFormat('YmdHis P', $date,new DateTimeZone('UTC'));
-			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
-			return	$dt->format('Y-m-d H:i:s');
-		}
-		catch( \Exception $e ){}
-		catch( \Error $e ){}
-
-		try
-		{
-			$dt		= \DateTime::createFromFormat('YmdHis', $date, new DateTimeZone('UTC'));
-			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
-			return	$dt->format('Y-m-d H:i:s');
-		}
-		catch( \Exception $e ){}
-		catch( \Error $e ){}
-
-
-		try
-		{
-			$ex = explode(' ', $date);
-			$sd = $ex[0];
-			$ed = $ex[1];
-			
-			if(strlen($sd) == 13) {
-				$sd = "{$sd}0";
-			}
-			
-			$date = $sd." ".$ed;
-
-			$dt		= \DateTime::createFromFormat('YmdHis P', $date,new DateTimeZone('UTC'));
-			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
-			return	$dt->format('Y-m-d H:i:s');
-		}
-		catch( \Exception $e ){}
-		catch( \Error $e ){}
-
-		
-		return null;
-	}
-
-	/**
-	 * @param $descr
-	 *
-	 * @return string
-	 */
-	private function filterDescr($descr): string {
-		if (array_key_exists($descr,$this->ignoreDescr)) {
-			return '';
-		}
-		return $descr;
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function getChannels() {
-		return $this->channels;
-	}
-
-	/**
-	 * @return array
-	 */
-	public function getEpgdata() {
-		return $this->epgdata;
-	}
-
-	/**
-	 * @param mixed $channelfilter
-	 */
-	public function setChannelfilter($channelfilter): void {
-		$this->channelfilter[$channelfilter] = 1;
-	}
-
-	/**
-	 * 
-	 */
-	public function resetChannelfilter(): void {
-		$this->channelfilter = [];
-	}
-
-	/**
-	 * 
-	 */
-	private function channelMatchFilter(string $channel): bool {
-		return array_key_exists($channel, $this->channelfilter);
-	}
-
-	/**
-	 * @param string $descr
-	 */
-	public function setIgnoreDescr(string $descr): void {
-		$this->ignoreDescr[$descr]=1;
-	}
-
-	/**
-	 * @param mixed $targetTimeZone
-	 */
-	public function setTargetTimeZone($targetTimeZone): void {
-		$this->targetTimeZone = $targetTimeZone;
-	}
-
-
 }
