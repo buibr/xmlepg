@@ -1,5 +1,5 @@
 {
-    "name": "macropage/xmltv-parser",
+    "name": "buibr/xmlepg",
     "description": "Parse XMLTV",
     "type": "library",
     "license": "MIT",
@@ -10,10 +10,13 @@
         {
             "name": "Michael Bladowski",
             "email": "info@macropage.de"
+        },
+        {
+            "name": "Burhan Ibraimi",
+            "email": "burhan@wflux.pro"
         }
     ],
     "autoload" : {
       "classmap" : ["src/"]
-    },
-    "minimum-stability": "stable"
+    }
 }
