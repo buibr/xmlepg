@@ -7,7 +7,7 @@ use DateTimeZone;
 use SimpleXMLElement;
 use XMLReader;
 
-class Parser {
+class EpgParser {
 
 	private $file;
 	private $url;
