@@ -91,6 +91,7 @@ class Parser {
 					'desc'        => $this->filterDescr((string)$element->desc),
 					'date'        => (int)(string)$element->date,
 					'country'     => (string)$element->country,
+					'icon'        => (string)$element->icon,
 					'episode-num' => (string)$element->{'episode-num'},
 				];
 
@@ -212,6 +213,16 @@ class Parser {
 		}
 		catch( \Exception $e ){}
 		catch( \Error $e ){}
+
+		try
+		{
+			$dt		= \DateTime::createFromFormat('YmdHis', $date, new DateTimeZone('UTC'));
+			$dt->setTimezone( new DateTimeZone($this->targetTimeZone) );
+			return	$dt->format('Y-m-d H:i:s');
+		}
+		catch( \Exception $e ){}
+		catch( \Error $e ){}
+
 
 		try
 		{

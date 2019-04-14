@@ -8,7 +8,6 @@ $Parser->setTargetTimeZone('Europe/Berlin');
 //$Parser->setChannelfilter('prosiebenmaxx.de'); //optional
 $Parser->setIgnoreDescr('Keine Details verfügbar.'); //optional
 
-
 try 
 {
 	$Parser->parseUrl();

@@ -39,4 +39,12 @@ try {
 print_r($epg->getEpgdata());
 ```
 
-Example call: `parse.php xml/sample.xml`
+Example file:
+```
+php -f testFile.php xml/sample.xml
+```
+
+Example url:
+```
+php -f testUrl.php http://tvprofil.net/xmltv/data/top-channel.al/2019-04-15_top-channel.al_tvprofil.net.xml
+```
