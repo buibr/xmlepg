@@ -18,4 +18,4 @@ catch (Exception $e)
 }
 
 /** @noinspection ForgottenDebugOutputInspection */
-print_r($Parser->getEpgdata());
+print_r($Parser->getChannels());
