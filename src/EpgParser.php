@@ -188,6 +188,7 @@ class EpgParser {
 		}
 
 		$xml = new XMLReader();
+		
 		//compress.zlib://'
 		$xml->open($this->file);
 
@@ -307,7 +308,7 @@ class EpgParser {
 				'icon'=>(string)$element->{'icon'},
 				'logo'=>(string)$element->{'icon'},
 			];
-			
+
 			$xml->next('channel');
 			unset($element);
 		}
