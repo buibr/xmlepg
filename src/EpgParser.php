@@ -16,7 +16,7 @@ class EpgParser {
 	private $content;
 
 	//	for temporary file if from content or from url.
-	private $isTempt;
+	private $isTemp;
 	public $temp_dir = '/tmp';	//unix, change this for windows.
 
 	//	channel settings
@@ -282,6 +282,10 @@ class EpgParser {
 
 		$xml->close();
 
+		if($this->isTemp) {
+			@unlink( $this->file );
+		}
+
 	}
 
 	/**
@@ -346,7 +350,8 @@ class EpgParser {
 			throw new \RuntimeException("Writing to {$this->file} is not possible.");
 		}
 
-		$this->content = null;
+		$this->isTemp	= true;
+		$this->content	= null;
 	}
 
 
