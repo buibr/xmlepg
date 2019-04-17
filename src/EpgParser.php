@@ -269,6 +269,8 @@ class EpgParser {
 					'sub-title'   => (string)$element->{'sub-title'},
 					'desc'        => $this->filterDescr((string)$element->desc),
 					'date'        => (int)(string)$element->date,
+					'category'	  => (string)$element->category,
+					'credits'     => (string)$element->credits,
 					'country'     => (string)$element->country,
 					'icon'        => (string)$element->icon,
 					'episode-num' => (string)$element->{'episode-num'},
