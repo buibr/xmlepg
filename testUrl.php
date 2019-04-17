@@ -12,9 +12,19 @@ try
 {
 	$Parser->parseUrl();
 } 
-catch (Exception $e) 
+catch (\Exception $e) 
 {
-	throw new \RuntimeException($e);
+	print('<pre>');
+	print_r($e->getMessage());
+	print('</pre>');
+	die;
+}
+catch (\RuntimeException $e) 
+{
+	print('<pre>');
+	print_r($e->getMessage());
+	print('</pre>');
+	die;
 }
 
 /** @noinspection ForgottenDebugOutputInspection */

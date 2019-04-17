@@ -3,15 +3,21 @@
 namespace buibr\xmlepg;
 
 
-use DateTimeZone;
-use SimpleXMLElement;
 use XMLReader;
+use SimpleXMLElement;
+use RuntimeException;
+use DateTimeZone;
 
 class EpgParser {
 
 	//	Source datas.
 	private $file;
 	private $url;
+	private $content;
+
+	//	for temporary file if from content or from url.
+	private $isTempt;
+	public $temp_dir = '/tmp';	//unix, change this for windows.
 
 	//	channel settings
 	private $channels;
@@ -27,6 +33,9 @@ class EpgParser {
 
 	//	zone.
 	private $targetTimeZone;
+
+	//	callbacks
+	public $onError;
 
 	public function __construct() {
 		$this->targetTimeZone = \date_default_timezone_get();
@@ -44,6 +53,13 @@ class EpgParser {
 	 */
 	public function setUrl($url): void {
 		$this->url = $url;
+	}
+
+	/**
+	 * @param mixed $content = xml parsed string. 
+	 */
+	public function setContent($content): void {
+		$this->content = $content;
 	}
 
 	/**
@@ -85,9 +101,9 @@ class EpgParser {
 	}
 
 	/**
-	 * 
+	 * Parse the date from string in posible formats.
 	 */
-	public function parseDate( string $date ){
+	public function getDate( string $date ){
 
 		try
 		{
@@ -157,8 +173,6 @@ class EpgParser {
 		return $this->epgdata;
 	}
 
-	
-
 	/**
 	 * 
 	 */
@@ -187,9 +201,10 @@ class EpgParser {
 			throw new \RuntimeException('file does not exists: ' . $this->file);
 		}
 
+		//	
 		$xml = new XMLReader();
 		
-		//compress.zlib://'
+		//	compress.zlib://'
 		$xml->open($this->file);
 
 		/** @noinspection PhpStatementHasEmptyBodyInspection */
@@ -205,7 +220,7 @@ class EpgParser {
 			$group_by	= $this->channels_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
 
 			/** @noinspection PhpUndefinedFieldInspection */
-			$this->channels[$group_by?:0] = [
+			$this->channels[$group_by?:1] = [
 				'id'=>(string)$element->attributes()->id,
 				'name'=>(string)$element->{'display-name'},
 				'display-name'=>(string)$element->{'display-name'},
@@ -236,10 +251,10 @@ class EpgParser {
 			{
 
 				/** @noinspection 	PhpUndefinedFieldInspection */
-				$startString		= $this->parseDate( (string)$element->attributes()->start );
+				$startString		= $this->getDate( (string)$element->attributes()->start );
 				
 				/** @noinspection	PhpUndefinedFieldInspection */
-				$stopString			= $this->parseDate( (string)$element->attributes()->stop );
+				$stopString			= $this->getDate( (string)$element->attributes()->stop );
 
 				/** @noinspection	PhpUndefinedFieldInspection */
 				$grouper			= $this->epgdata_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
@@ -283,81 +298,72 @@ class EpgParser {
 			throw new \RuntimeException('Url invalid: ' . $this->url);
 		}
 
-		$xml = new XMLReader();
+		$this->content = @\file_get_contents( $this->url );
 
-		//compress.zlib://'
-		$xml->open($this->url);
-
-		/** @noinspection PhpStatementHasEmptyBodyInspection */
-		/** @noinspection LoopWhichDoesNotLoopInspection */
-		/** @noinspection MissingOrEmptyGroupStatementInspection */
-		while ($xml->read() && $xml->name !== 'channel') {
+		if (!strpos($http_response_header[0], "200")) { 
+			throw new \RuntimeException("Invalid response headers: ". $http_response_header[0], 1);
 		}
 
-		while ($xml->name === 'channel') {
-			$element = new SimpleXMLElement($xml->readOuterXML());
-
-			/** @noinspection	PhpUndefinedFieldInspection */
-			$group_by	= $this->channels_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
-
-			/** @noinspection PhpUndefinedFieldInspection */
-			$this->channels[$group_by?:0] = [
-				'id'=>(string)$element->attributes()->id,
-				'name'=>(string)$element->{'display-name'},
-				'display-name'=>(string)$element->{'display-name'},
-				'icon'=>(string)$element->{'icon'},
-				'logo'=>(string)$element->{'icon'},
-			];
-
-			$xml->next('channel');
-			unset($element);
-		}
-
-		$xml->close();
-		$xml->open($this->url);
-
-		/** @noinspection PhpStatementHasEmptyBodyInspection */
-		/** @noinspection LoopWhichDoesNotLoopInspection */
-		/** @noinspection MissingOrEmptyGroupStatementInspection */
-		while ($xml->read() && $xml->name !== 'programme') {
-		}
-
-		while ($xml->name === 'programme') {
-			$element = new SimpleXMLElement($xml->readOuterXML());
-
-			/** @noinspection PhpUndefinedFieldInspection */
-			if ( !\count($this->channelfilter) || (\count($this->channelfilter) && $this->channelMatchFilter((string)$element->attributes()->channel))) 
-			{
-				/** @noinspection 	PhpUndefinedFieldInspection */
-				$startString		= $this->parseDate( (string)$element->attributes()->start );
-				
-				/** @noinspection	PhpUndefinedFieldInspection */
-				$stopString			= $this->parseDate( (string)$element->attributes()->stop );
-				
-				/** @noinspection	PhpUndefinedFieldInspection */
-				$grouper			= $this->epgdata_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
-
-				/** @noinspection PhpUndefinedFieldInspection */
-				$this->epgdata[$grouper?:0] = [
-					'start'       => $startString,
-					'start_raw'   => (string)$element->attributes()->start,
-					'channel'     => (string)$element->attributes()->channel,
-					'stop'        => $stopString,
-					'title'       => (string)$element->title,
-					'sub-title'   => (string)$element->{'sub-title'},
-					'desc'        => $this->filterDescr((string)$element->desc),
-					'date'        => (int)(string)$element->date,
-					'country'     => (string)$element->country,
-					'episode-num' => (string)$element->{'episode-num'},
-				];
-
-			}
-
-			$xml->next('programme');
-			unset($element);
-		}
-
-		$xml->close();
+		$this->checkXml();
+		$this->saveTemp(); // will save the file.
+		$this->parseFile();
 
 	}
+
+
+	/**
+	 * @throws \RuntimeException
+	 * @throws \Exception
+	 */
+	public function parseContent(): void {
+
+		if (!$this->content) {
+			throw new \RuntimeException('Url missing: please use setUrl before parseUrl');
+		}
+
+		$this->checkXml();
+		$this->saveTemp(); // will save the file.
+		$this->parseFile();
+
+	}
+
+
+	/**
+	 * Save content to temp file from ulr or from content.
+	 */
+	public function saveTemp( ) : void
+	{
+		if(empty($this->temp_dir)){
+			$this->temp_dir = '/tmp/';
+		}
+
+		$length = 15;
+		$filename = substr(str_shuffle(str_repeat($x='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', ceil($length/strlen($x)) )),1,$length);
+		
+		$this->file = $this->temp_dir . '/' . $filename . '.xml';
+
+		if(!\file_put_contents($this->file, $this->content)){
+			throw new \RuntimeException("Writing to {$this->file} is not possible.");
+		}
+
+		$this->content = null;
+	}
+
+
+	/**
+	 * Check content of response from xml f is xml
+	 * @throws \RuntimeException
+	 */
+	public function checkXml(){
+		libxml_use_internal_errors(true);
+		$doc = simplexml_load_string($this->content);
+		if (!$doc) {
+			$errors = libxml_get_errors();
+			@$errors = $errors[0];
+
+			throw new \RuntimeException("Content of this request its not XML: $errors");
+		}
+	}
+
+
 }
