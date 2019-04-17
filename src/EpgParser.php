@@ -222,10 +222,10 @@ class EpgParser {
 			/** @noinspection PhpUndefinedFieldInspection */
 			$this->channels[$group_by?:1] = [
 				'id'=>(string)$element->attributes()->id,
-				'name'=>(string)$element->{'display-name'},
 				'display-name'=>(string)$element->{'display-name'},
 				'icon'=>(string)$element->{'icon'},
-				'logo'=>(string)$element->{'icon'},
+				'url'=>(string)$element->{'url'},
+				'email'=>(string)$element->{'email'},
 			];
 
 			$xml->next('channel');
