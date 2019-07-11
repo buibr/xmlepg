@@ -213,20 +213,50 @@ class EpgParser {
 		while ($xml->read() && $xml->name !== 'channel') {
 		}
 
+		$i = 0;
 		while ($xml->name === 'channel') {
 			$element 	= new SimpleXMLElement($xml->readOuterXML());
 
 			/** @noinspection	PhpUndefinedFieldInspection */
 			$group_by	= $this->channels_groupby === '@id' ? (@$i++) : (string)$element->attributes()->{$this->epgdata_groupby};
 
+			//	se the id
+			$channel_id = $group_by?:1;
+
 			/** @noinspection PhpUndefinedFieldInspection */
-			$this->channels[$group_by?:1] = [
+			$this->channels[$channel_id] = [
 				'id'=>(string)$element->attributes()->id,
 				'display-name'=>(string)$element->{'display-name'},
-				'icon'=>(string)$element->{'icon'},
 				'url'=>(string)$element->{'url'},
 				'email'=>(string)$element->{'email'},
+				'icon'=> null,
 			];
+
+			if(isset($element->{'icon'}) && $element->{'icon'} instanceof SimpleXMLElement)
+			{
+				$attributes = $element->{'icon'}->attributes();
+				$pathinfo 	= pathinfo($attributes->src);
+
+				if(empty($attributes->src)){
+					$this->channels[$channel_id]['icon'] = (string)$element->{'icon'};
+					$xml->next('channel');
+					unset($element);
+				} 
+				elseif(!filter_var($attributes->src, FILTER_VALIDATE_URL)){
+					$this->channels[$channel_id]['icon'] = (string)$element->{'icon'};
+					$xml->next('channel');
+					unset($element);
+				}
+				elseif(empty($pathinfo['extension'])){
+					$this->channels[$channel_id]['icon'] = (string)$element->{'icon'};
+					$xml->next('channel');
+					unset($element);
+					continue;
+				}
+				else {
+					$this->channels[$channel_id]['icon'] = (string)$attributes->src;
+				}
+			}
 
 			$xml->next('channel');
 			unset($element);
